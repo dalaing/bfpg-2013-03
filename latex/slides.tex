@@ -60,9 +60,11 @@
 \begin{frame}
     \frametitle {Monoids are great!}
 \begin{itemize}
-\item Data.Foldable
-\item Finger trees
 \item Taking the tree out of tree shaped computations
+    \begin{itemize}
+        \item Summarize with monoids and Data.Foldable
+        \item Fun times with finger trees
+    \end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -137,15 +139,16 @@ instance Monoid [a] where
     \frametitle {Functors are great!}
 \begin{itemize}
 \item Apply a function to everything in a structure
-\item Preserve the shape of the structure
-\begin{itemize}
+    \begin{itemize}
     \item You can double the values in a tree
-\end{itemize}
+    \end{itemize}
+\item Preserve the shape of the structure
+\item[]
 \item Compose functions and apply once 
-\item Saves multiple traversals
-\begin{itemize}
+    \begin{itemize}
     \item You can double and then add one to the values in a tree
-\end{itemize}
+    \end{itemize}
+\item Saves multiple traversals
 \end{itemize}
 \end{frame}
 
@@ -231,6 +234,13 @@ instance Functor [] where
         \item \verb?x? $\in$ \verb?Nat?
         \item so the definition of \verb?Nat? is recursive
     \end{itemize}
+
+    \item Ascii time!
+\begin{verbatim}
+  S      S         S            ...
+ / \    / \       / \
+O   S(O)   S(S(O))   S(S(S(O))) ...
+\end{verbatim}
 
     \end{itemize}
 \end{frame}
@@ -481,6 +491,18 @@ The rest of \Verb?Nat? left as an exercise...
 \item At each step we look at the last one and think "just one more"
 \item Exploit the pattern, use a little abstraction.
 \end{itemize}
+
+\begin{verbatim}
+  P(O)   ->  P(S(O))   ->    P(S(S(O))) ...
+ /     \    /       \       / 
+O       S(O)         S(S(O))            ...
+\end{verbatim}
+
+\begin{verbatim}
+   ... P(x)  ->  P(S(x))   ->    P(S(S(x)))
+           \    /       \       /
+   ...      S(x)         S(S(x))
+\end{verbatim}
 
 \end{frame}
 
@@ -1393,6 +1415,11 @@ map f l =
 \item Interactive Theorem Proving and Program Development - Bertot
 \item Software Foundations - Pierce
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Slides and code}
+https://github.com/dalaing/bfpg-2013-03
 \end{frame}
 
 \end{document}
