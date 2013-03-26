@@ -1,0 +1,8 @@
+coq/CpdtTactics.v
+**/*.aux
+**/*.log
+**/*.nav
+**/*.out
+**/*.snm
+**/*.toc
+**/*.vrb

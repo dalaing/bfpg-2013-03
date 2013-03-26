@@ -1,0 +1,1398 @@
+\documentclass{beamer}
+
+\usepackage{amsmath}
+\usepackage{fancyvrb}
+
+\usetheme{Berlin}
+
+\AtBeginSection[]%
+{%
+\begin{frame}%
+  \begin{center}%
+    \usebeamerfont{section title}\insertsection%
+  \end{center}%
+\end{frame}%
+}%
+
+\setbeamersize{text margin left=15pt}
+\newcommand{\ca}[1]{{\color{blue}#1}}
+\newcommand{\cb}[1]{{\color{violet}#1}}
+\newcommand{\cc}[1]{{\color{red}#1}}
+\newcommand{\cd}[1]{{\color{orange!90!black}#1}}
+\newcommand{\ce}[1]{{\color{green!50!black}#1}}
+
+\mode<presentation>
+
+\title{Laws and Equations and Coq}
+
+\author{Dave Laing}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}
+    \frametitle{Outline}
+    \tableofcontents[pausesections]
+\end{frame}
+
+\section{Laws}
+
+\begin{frame}
+    \frametitle {Laws}
+
+\begin{itemize}
+\item Help when reasoning about code
+\item Particularly code that makes use of typeclasses
+\item There's only so much that a typeclass can enforce
+\item For everything else there is
+    \begin{itemize}
+        \item Equational reasoning
+        \item Theorem provers
+        \item Angry letters to the authors
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle {Monoids are great!}
+\begin{itemize}
+\item Data.Foldable
+\item Finger trees
+\item Taking the tree out of tree shaped computations
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Monoids}
+
+A monoid is a combination of 
+\begin{itemize}
+\item a type \verb?A?
+\end{itemize}
+and a function
+\begin{itemize}
+\item $\oplus$ \verb?:: A? $\rightarrow$ \verb?A? $\rightarrow$ \verb?A? 
+\end{itemize}
+that satisfies certain laws.
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Monoid Laws}
+
+There must exist and element \verb?e :: A? such that for all \verb?a :: A?
+\begin{columns}
+\column{0.65\textwidth}
+\begin{itemize}
+\item \verb?e? $\oplus$ \verb?a = a?
+\item \verb?a? $\oplus$ \verb?e = a?
+\end{itemize}
+\column{0.35\textwidth}
+\begin{itemize}
+\item[] (Left identity)
+\item[] (Right identity)
+\end{itemize}
+\end{columns}
+
+\vspace{10pt}
+
+For all \verb?a, b, c :: A?
+\begin{columns}
+\column{0.65\textwidth}
+\begin{itemize}
+\item \verb?a? $\oplus$ \verb?(b? $\oplus$ \verb?c) = (a? $\oplus$ \verb?b)? $\oplus$ \verb?c?
+\end{itemize}
+\column{0.35\textwidth}
+\begin{itemize}
+\item[] (Associativity)
+\end{itemize}
+\end{columns}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Monoid typeclass and List instance}
+
+\begin{verbatim}
+class Monoid a where
+    mempty :: a
+    mappend :: a -> a -> a
+\end{verbatim}
+
+\begin{verbatim}
+instance Monoid [a] where
+    mempty = []
+    mappend = (++)
+\end{verbatim}
+
+(Remembering that \verb?(++)? has type \verb?[a] -> [a] -> [a]?)
+
+\end{frame}
+
+\begin{frame}
+    \frametitle {Functors are great!}
+\begin{itemize}
+\item Apply a function to everything in a structure
+\item Preserve the shape of the structure
+\begin{itemize}
+    \item You can double the values in a tree
+\end{itemize}
+\item Compose functions and apply once 
+\item Saves multiple traversals
+\begin{itemize}
+    \item You can double and then add one to the values in a tree
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Aside: Type constructors}
+
+Suppose \verb?F? is a type constructor (like Maybe or List)
+\begin{itemize}
+\item \Verb?F? isn't a type
+\item \Verb?F Int?, \Verb?F String? are types
+\item we'll use \Verb?F a?, \Verb?F b? as types for abstraction
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Functors}
+A functor is a combination of 
+\begin{itemize}
+\item a type constructor \verb?F? 
+\end{itemize}
+and 
+\begin{itemize}
+\item a function \verb?fmap :: (a? $\rightarrow$ \verb?b)? $\rightarrow$ \verb?F a? $\rightarrow$ \verb?F b?
+\end{itemize}
+that satisfies certain laws.
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Functor Laws}
+
+\begin{columns}
+\column{0.75\textwidth}
+\begin{itemize}
+\item \verb?fmap id = id?
+\item \verb?fmap g (fmap f xs) = fmap (g? $\circ$ \verb?f) xs?
+\end{itemize}
+\column{0.35\textwidth}
+\begin{itemize}
+\item[] (Identity)
+\item[] (Composition)
+\end{itemize}
+\end{columns}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Functor typeclass and List instance}
+
+\begin{verbatim}
+class Functor f where
+    fmap :: (a -> b) -> f a -> f b 
+\end{verbatim}
+
+\begin{verbatim}
+instance Functor [] where
+    fmap = map
+\end{verbatim}
+
+(Remember that \verb?map? has type \verb?(a -> b) -> [a] -> [b]?)
+
+\end{frame}
+
+\section{Induction}
+
+\begin{frame}[fragile]
+    \frametitle {Natural numbers}
+\begin{itemize}
+    \item \verb?O :: Nat?
+    \begin{itemize}
+        \item this is zero
+    \end{itemize}
+
+    \item \verb?S :: Nat -> Nat?
+    \begin{itemize}
+        \item this is the successor function
+        \item it returns one more than its input
+    \end{itemize}
+
+    \item \verb?Nat = O | S(x)?
+    \begin{itemize}
+        \item \verb?x? $\in$ \verb?Nat?
+        \item so the definition of \verb?Nat? is recursive
+    \end{itemize}
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[t,fragile]
+    \frametitle {Addition}
+
+\begin{overprint}
+
+\onslide<1-2,6,13>
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+O    + n = n
+S(m) + n = S(m + n)
+\end{semiverbatim}
+
+\onslide<10>
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+\ca{O}    + \cb{n} = n
+S(m) + n = S(m + n)
+\end{semiverbatim}
+
+\onslide<11-12>
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+\ca{O}    + \cb{n} = \cb{n}
+S(m) + n = S(m + n)
+\end{semiverbatim}
+
+\onslide<3,7>
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+O    + n = n
+S(\ca{m}) + \cb{n} = S(m + n)
+\end{semiverbatim}
+
+\onslide<4-5,8-9>
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+O    + n = n
+S(\ca{m}) + \cb{n} = S(\ca{m} + \cb{n})
+\end{semiverbatim}
+
+\end{overprint}
+
+\vspace{10pt}
+
+\begin{center}
+\begin{overprint}
+
+\onslide<1>
+\begin{semiverbatim}
+S(S(O)) + S(S(S(O)))                      2 + 3
+\end{semiverbatim}
+
+\onslide<2-4>
+\begin{semiverbatim}
+S(\ca{S(O)}) + \cb{S(S(S(O)))}                      2 + 3
+\end{semiverbatim}
+
+\onslide<5>
+\begin{semiverbatim}
+S(\ca{S(O)}  + \cb{S(S(S(O)))})                 1+ (1 + 3)
+\end{semiverbatim}
+
+\onslide<6-8>
+\begin{semiverbatim}
+S(S(\ca{O})  + \cb{S(S(S(O)))})                 1+ (1 + 3)
+\end{semiverbatim}
+
+\onslide<9-11>
+\begin{semiverbatim}
+S(S(\ca{O}   + \cb{S(S(S(O)))}))             1+ 1+ (0 + 3)
+\end{semiverbatim}
+
+\onslide<12>
+\begin{semiverbatim}
+S(S      (\cb{S(S(S(O)))}))             1+ 1+ 3
+\end{semiverbatim}
+
+\onslide<13>
+\begin{semiverbatim}
+S(S      (S(S(S(O)))))                   5
+\end{semiverbatim}
+
+\end{overprint}
+\end{center}
+
+\end{frame}
+
+\begin{frame}[t,fragile]
+    \frametitle {Right identity - the long way}
+
+Goal: $\forall$ \Verb?x :: Nat? \\
+\quad \Verb?x + O = x?
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1-2,6-7,11-16,20->
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+O    + n = n
+S(m) + n = S(m + n)
+\end{semiverbatim}
+
+\onslide<3>
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+\ca{O}    + \cb{n} = n
+S(m) + n = S(m + n)
+\end{semiverbatim}
+
+\onslide<4,5>
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+\ca{O}    + \cb{n} = \cb{n}
+S(m) + n = S(m + n)
+\end{semiverbatim}
+
+\onslide<8,17>
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+O    + n = n
+S(\ca{m}) + \cb{n} = S(m + n)
+\end{semiverbatim}
+
+\onslide<9-10,18-19>
+\begin{semiverbatim}
+(+) :: Nat -> Nat -> Nat
+O    + n = n
+S(\ca{m}) + \cb{n} = S(\ca{m} + \cb{n})
+\end{semiverbatim}
+
+\end{overprint}
+
+\vspace{10pt}
+
+\begin{center}
+\begin{overprint}
+
+\onslide<1>
+\begin{semiverbatim}
+O       + O = ?
+\end{semiverbatim}
+
+\onslide<2-4>
+\begin{semiverbatim}
+\ca{O}       + \cb{O} = ?
+\end{semiverbatim}
+
+\onslide<5>
+\begin{semiverbatim}
+O       + O = \cb{O}
+\end{semiverbatim}
+
+\onslide<6>
+\begin{semiverbatim}
+O       + O = O
+S(O)    + O = ?
+\end{semiverbatim}
+
+\onslide<7-9>
+\begin{semiverbatim}
+O       + O = O
+S(\ca{O})    + \cb{O} = ?
+\end{semiverbatim}
+
+\onslide<10>
+\begin{semiverbatim}
+O       + O = O
+S(O)    + O = S(\ca{O} + \cb{O})
+\end{semiverbatim}
+
+\onslide<11-13>
+\begin{semiverbatim}
+\alert<12>{O       + O} = \alert<13>{O}
+S(O)    + O = S(\alert<11-13>{O + O})
+\end{semiverbatim}
+
+\onslide<14>
+\begin{semiverbatim}
+O       + O = \alert{O}
+S(O)    + O = S(\alert{O})
+\end{semiverbatim}
+
+\onslide<15>
+\begin{semiverbatim}
+O       + O = O
+S(O)    + O = S(O)
+S(S(O)) + O = ?
+\end{semiverbatim}
+
+\onslide<16-18>
+\begin{semiverbatim}
+O       + O = O
+S(O)    + O = S(O)
+S(\ca{S(O)}) + \cb{O} = ?
+\end{semiverbatim}
+
+\onslide<19>
+\begin{semiverbatim}
+O       + O = O
+S(O)    + O = S(O)
+S(S(O)) + O = S(\ca{S(O)} + \cb{O})
+\end{semiverbatim}
+
+\onslide<20-22>
+\begin{semiverbatim}
+O       + O = O
+\alert<21>{S(O)    + O} = \alert<22>{S(O)}
+S(S(O)) + O = S(\alert<20-22>{S(O) + O})
+\end{semiverbatim}
+
+\onslide<23>
+\begin{semiverbatim}
+O       + O = O
+S(O)    + O = \alert{S(O)}
+S(S(O)) + O = S(\alert{S(O)})
+\end{semiverbatim}
+
+\onslide<24->
+\begin{semiverbatim}
+O       + O = O
+S(O)    + O = S(O)
+S(S(O)) + O = S(S(O))
+\end{semiverbatim}
+
+\end{overprint}
+
+\vspace{10pt}
+
+\onslide<25>
+The rest of \Verb?Nat? left as an exercise...
+
+\end{center}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Right identity - the pattern}
+
+\begin{itemize}
+\item Proof for \Verb?S(O)? used proof for \Verb?O?
+\item Proof for \Verb?S(S(O))? used proof for \Verb?S(O)?
+\item At each step we look at the last one and think "just one more"
+\item Exploit the pattern, use a little abstraction.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Right identity - the details}
+
+\begin{itemize}
+\item Show that if \Verb?x + O = x? then \Verb?S(x) + O = S(x)? 
+    \begin{itemize}
+        \item Captures the "just one more" part of the proof
+    \end{itemize}
+\item Need to prove the base case as well.
+    \begin{itemize}
+    \item In this case the base case is \Verb?O + O = O?
+    \item So the "just one more" part has somewhere sensible to start from.
+    \item Otherwise we can also prove that \Verb?x + S(O) = x? for $x > O$
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+    \frametitle {Induction}
+
+To prove \Verb?P(n)? for all \Verb?n? $\in$ \Verb?Nat?
+\begin{itemize}
+\item prove that \Verb?P(O)? holds
+\item prove that \Verb?P(n)? $\rightarrow$ \Verb?P(S n)? holds
+\end{itemize}
+
+\vspace{10pt}
+
+To prove \Verb?P(xs)? for all \Verb?xs? $\in$ \Verb?[a]?
+\begin{itemize}
+\item prove that \Verb?P([])? holds
+\item prove that \Verb?P(xs)? $\rightarrow$ \Verb?P(x:xs)?
+\end{itemize}
+
+\vspace{10pt}
+
+Similar for trees, any other recursive datatypes
+
+\end{frame}
+
+\section{Equational Reasoning}
+
+\begin{frame}[t,fragile]
+    \frametitle {Monoid - Left Identity}
+
+\begingroup
+\color{gray}\fontsize{10}{9.8}\selectfont
+
+Goal : $\forall$ \verb?bs :: [a]? \\
+    \quad \alert<2>{\Verb?[] ++ bs = bs?}
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1-4,8->
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+[]     ++ ys = ys
+(x:xs) ++ ys = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<5>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+\ca{[]}     ++ \cb{ys} = ys
+(x:xs) ++ ys = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<6-7>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+\ca{[]}     ++ \cb{ys} = \cb{ys}
+(x:xs) ++ ys = x:(xs ++ ys)
+\end{semiverbatim}
+
+\end{overprint}
+
+\endgroup
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1-8>
+Case: \ce{\Verb?[]?}
+
+\onslide<9>
+Case: \ce{\Verb?[]?} \checkmark
+
+\end{overprint}
+
+\vspace{5pt}
+
+\begin{center}
+\begin{overprint}
+
+\onslide<3>
+\begin{semiverbatim}
+[] ++ bs = bs
+\end{semiverbatim}
+
+\onslide<4-6>
+\begin{semiverbatim}
+\ca{[]} ++ \cb{bs} = bs
+\end{semiverbatim}
+
+\onslide<7>
+\begin{semiverbatim}
+      \cb{bs} = bs
+\end{semiverbatim}
+
+\onslide<8-9>
+\begin{semiverbatim}
+      \alert<8>{bs} = \alert<8>{bs}
+\end{semiverbatim}
+
+\end{overprint}
+\end{center}
+
+\end{frame}
+
+\begin{frame}[t,fragile]
+    \frametitle {Monoid - Right Identity}
+
+\begingroup
+\color{gray}\fontsize{10}{9.8}\selectfont
+
+Goal : $\forall$ \verb?bs :: [a]? \\
+    \quad \alert<3,13>{\Verb?bs ++ [] = bs?}
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1-6,10-16,20->
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+[]     ++ ys = ys
+(x:xs) ++ ys = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<7>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+\ca{[]}     ++ \cb{ys} = ys
+(x:xs) ++ ys = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<8-9>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+\ca{[]}     ++ \cb{ys} = \cb{ys}
+(x:xs) ++ ys = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<17>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+[]     ++ ys = ys
+(\ca{x}:\cb{xs}) ++ \cc{ys} = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<18-19>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+[]     ++ ys = ys
+(\ca{x}:\cb{xs}) ++ \cc{ys} = \ca{x}:(\cb{xs} ++ \cc{ys})
+\end{semiverbatim}
+
+\end{overprint}
+
+\endgroup
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1>
+Cases:\quad\Verb?bs = []? \quad and \Verb?bs = (x:xs)?
+
+\onslide<2-10>
+Case:\quad{\ce{\Verb?bs = ?\alert<4>{\Verb?[]?}}} 
+
+\onslide<11>
+Case:\quad{\ce{\Verb?bs = []?}} \checkmark 
+
+\onslide<12-24>
+Case:\quad{\ce{\Verb?bs = ?\alert<14>{\Verb?(x:xs)?}}} \\
+Assume: \alert<21>{\Verb?xs ++ []?}\Verb? = ?\alert<22-23>{\Verb?xs?}
+
+\onslide<25>
+Case:\quad{\ce{\Verb?bs = (x:xs)?}} \checkmark \\
+Assume: \Verb?xs ++ [] = xs?
+
+\end{overprint}
+
+\vspace{5pt}
+
+\begin{center}
+\begin{overprint}
+
+\onslide<3-4>
+\begin{semiverbatim}
+\alert<4>{bs} ++ [] = \alert<4>{bs}
+\end{semiverbatim}
+
+\onslide<5>
+\begin{semiverbatim}
+[] ++ [] = []
+\end{semiverbatim}
+
+\onslide<6-8>
+\begin{semiverbatim}
+\ca{[]} ++ \cb{[]} = []
+\end{semiverbatim}
+
+\onslide<9>
+\begin{semiverbatim}
+      \cb{[]} = []
+\end{semiverbatim}
+
+\onslide<10>
+\begin{semiverbatim}
+      \alert{[]} = \alert{[]}
+\end{semiverbatim}
+
+\onslide<11>
+\begin{semiverbatim}
+      [] = []
+\end{semiverbatim}
+
+\onslide<13-14>
+\begin{semiverbatim}
+\alert<14>{bs}     ++ [] = \alert<14>{bs}
+\end{semiverbatim}
+
+\onslide<15>
+\begin{semiverbatim}
+(x:xs) ++ [] = (x:xs)
+\end{semiverbatim}
+
+\onslide<16-18>
+\begin{semiverbatim}
+(\ca{x}:\cb{xs}) ++ \cc{[]} = (x:xs)
+\end{semiverbatim}
+
+\onslide<19>
+\begin{semiverbatim}
+\ca{x}:(\cb{xs} ++ \cc{[]}) = (x:xs)
+\end{semiverbatim}
+
+\onslide<20-22>
+\begin{semiverbatim}
+x:(\alert{xs ++ []}) = (x:xs)
+\end{semiverbatim}
+
+\onslide<23>
+\begin{semiverbatim}
+x:(\alert{xs})       = (x:xs)
+\end{semiverbatim}
+
+\onslide<24>
+\begin{semiverbatim}
+\alert{(x:xs)}       = \alert{(x:xs)}
+\end{semiverbatim}
+
+\onslide<25>
+\begin{semiverbatim}
+(x:xs)       = (x:xs)
+\end{semiverbatim}
+
+\end{overprint}
+\end{center}
+
+\end{frame}
+
+\begin{frame}[t,fragile]
+    \frametitle {Monoid - Associativity}
+
+\begingroup
+\color{gray}\fontsize{10}{9.8}\selectfont
+
+Goal : $\forall$ \verb?bs, cs, ds :: [a]? \\
+    \quad \alert<3,17>{\Verb?bs ++ (cs ++ ds) = (bs ++ cs) ++ ds?}
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1-6,10,14-20,24,28,32->
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+[]     ++ ys = ys
+(x:xs) ++ ys = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<7,11>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+\ca{[]}     ++ \cb{ys} = ys
+(x:xs) ++ ys = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<8-9,12-13>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+\ca{[]}     ++ \cb{ys} = \cb{ys}
+(x:xs) ++ ys = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<21,25,29>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+[]     ++ ys = ys
+(\ca{x}:\cb{xs}) ++ \cc{ys} = x:(xs ++ ys)
+\end{semiverbatim}
+
+\onslide<22-23,26-27,30-31>
+\begin{semiverbatim}
+(++) :: [a] -> [a] -> [a]
+[]     ++ ys = ys
+(\ca{x}:\cb{xs}) ++ \cc{ys} = \ca{x}:(\cb{xs} ++ \cc{ys})
+\end{semiverbatim}
+
+\end{overprint}
+
+\endgroup
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1>
+Cases:\quad\Verb?bs = []? \quad and \Verb?bs = (x:xs)?
+
+\onslide<2-14>
+Case:\quad{\ce{\Verb?bs = ?\alert<4>{\Verb?[]?}}} 
+
+\onslide<15>
+Case:\quad{\ce{\Verb?bs = []?}} \checkmark 
+
+\onslide<16-36>
+Case:\quad{\ce{\Verb?bs = ?\alert<18>{\Verb?(x:xs)?}}} \\
+Assume: \alert<33>{\Verb?xs ++ (cs ++ ds)?}\Verb? = ?\alert<34-35>{\Verb?(xs ++ cs) ++ ds?}
+
+\onslide<37>
+Case:\quad{\ce{\Verb?bs = (x:xs)?}} \checkmark \\
+Assume: \Verb?xs ++ (cs ++ ds) = (xs ++ cs) ++ ds?
+
+\end{overprint}
+
+\vspace{5pt}
+
+\begin{center}
+\begin{overprint}
+
+\onslide<3-4>
+\begin{semiverbatim}
+\alert<4>{bs} ++ (cs ++ ds) = (\alert<4>{bs} ++ cs) ++ ds
+\end{semiverbatim}
+
+\onslide<5>
+\begin{semiverbatim}
+[] ++ (cs ++ ds) = ([] ++ cs) ++ ds
+\end{semiverbatim}
+
+\onslide<6-8>
+\begin{semiverbatim}
+\ca{[]} ++ \cb{(cs ++ ds)} = ([] ++ cs) ++ ds
+\end{semiverbatim}
+
+\onslide<9>
+\begin{semiverbatim}
+       \cb{cs ++ ds}  = ([] ++ cs) ++ ds
+\end{semiverbatim}
+
+\onslide<10-12>
+\begin{semiverbatim}
+       cs ++ ds  = (\ca{[]} ++ \cb{cs}) ++ ds
+\end{semiverbatim}
+
+\onslide<13>
+\begin{semiverbatim}
+       cs ++ ds  = (\cb{cs})       ++ ds
+\end{semiverbatim}
+
+\onslide<14-15>
+\begin{semiverbatim}
+       \alert<14>{cs ++ ds}  =  \alert<14>{cs        ++ ds}
+\end{semiverbatim}
+
+\onslide<17-18>
+\begin{semiverbatim}
+    \alert<18>{bs} ++ (cs ++ ds) =     (\alert<18>{bs} ++ cs) ++ ds
+\end{semiverbatim}
+
+\onslide<19>
+\begin{semiverbatim}
+(x:xs) ++ (cs ++ ds) = ((x:xs) ++ cs) ++ ds
+\end{semiverbatim}
+
+\onslide<20-22>
+\begin{semiverbatim}
+(\ca{x}:\cb{xs}) ++ \cc{(cs ++ ds)} = ((x:xs) ++ cs) ++ ds
+\end{semiverbatim}
+
+\onslide<23>
+\begin{semiverbatim}
+\ca{x}:(\cb{xs} ++ \cc{(cs ++ ds)}) = ((x:xs) ++ cs) ++ ds
+\end{semiverbatim}
+
+\onslide<24-26>
+\begin{semiverbatim}
+x:(xs ++ (cs ++ ds)) = ((\ca{x}:\cb{xs}) ++ \cc{cs}) ++ ds
+\end{semiverbatim}
+
+\onslide<27>
+\begin{semiverbatim}
+x:(xs ++ (cs ++ ds)) = (\ca{x}:(\cb{xs} ++ \cc{cs})) ++ ds
+\end{semiverbatim}
+
+\onslide<28-30>
+\begin{semiverbatim}
+x:(xs ++ (cs ++ ds)) = (\ca{x}:\cb{(xs ++ cs)}) ++ \cc{ds}
+\end{semiverbatim}
+
+\onslide<31>
+\begin{semiverbatim}
+x:(xs ++ (cs ++ ds)) = \ca{x}:(\cb{(xs ++ cs)} ++ \cc{ds})
+\end{semiverbatim}
+
+\onslide<32-34>
+\begin{semiverbatim}
+x:(\alert{xs ++ (cs ++ ds)}) = x:((xs ++ cs) ++ ds)
+\end{semiverbatim}
+
+\onslide<35>
+\begin{semiverbatim}
+x:(\alert{(xs ++ cs) ++ ds)} = x:((xs ++ cs) ++ ds)
+\end{semiverbatim}
+
+\onslide<36>
+\begin{semiverbatim}
+\alert{x:((xs ++ cs) ++ ds)} = \alert{x:((xs ++ cs) ++ ds)}
+\end{semiverbatim}
+
+\onslide<37>
+\begin{semiverbatim}
+x:((xs ++ cs) ++ ds) = x:((xs ++ cs) ++ ds)
+\end{semiverbatim}
+
+\end{overprint}
+\end{center}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle {Monoid - Associativity - Bird style}
+\begin{semiverbatim}
+    bs ++ (cs ++ ds) = (bs ++ cs) ++ ds
+                  \ce{bs = x:xs}
+(x:xs) ++ (cs ++ ds) = ((x:xs) ++ cs) ++ ds
+              \ce{second rule for ++}
+x:(xs ++ (cs ++ ds)) = ((x:xs) ++ cs) ++ ds
+              \ce{second rule for ++}
+x:(xs ++ (cs ++ ds)) = (x:(xs ++ cs)) ++ ds
+              \ce{second rule for ++}
+x:(xs ++ (cs ++ ds)) = x:((xs ++ cs) ++ ds)
+             \ce{inductive hypothesis}
+x:((xs ++ cs) ++ ds) = x:((xs ++ cs) ++ ds)
+\end{semiverbatim}
+\end{frame}
+
+\begin{frame}[t,fragile]
+    \frametitle {Functor - Identity}
+
+\begingroup
+\color{gray}\fontsize{10}{9.8}\selectfont
+
+Goal : $\forall$ \verb?bs :: [a]? \\
+    \quad \alert<3,13>{\Verb?map id bs = bs?}
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1-6,10-16,20->
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map f [] = []
+map f (x:xs) = f x : map f xs
+\end{semiverbatim}
+
+\onslide<7>
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map \ca{f} \cb{[]} = []
+map f (x:xs) = f x : map f xs
+\end{semiverbatim}
+
+\onslide<8-9>
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map \ca{f} \cb{[]} = \cb{[]}
+map f (x:xs) = f x : map f xs
+\end{semiverbatim}
+
+\onslide<17>
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map f [] = []
+map \ca{f} (\cb{x}:\cc{xs}) = f x : map f xs
+\end{semiverbatim}
+
+\onslide<18-19>
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map f [] = []
+map \ca{f} (\cb{x}:\cc{xs}) = \ca{f} \cb{x} : map \ca{f} \cc{xs}
+\end{semiverbatim}
+
+\end{overprint}
+
+\endgroup
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1>
+Cases:\quad\Verb?bs = []? \quad and \Verb?bs = (x:xs)?
+
+\onslide<2-10>
+Case:\quad{\ce{\Verb?bs = ?\alert<4>{\Verb?[]?}}} 
+
+\onslide<11>
+Case:\quad{\ce{\Verb?bs = []?}} \checkmark 
+
+\onslide<12-26>
+Case:\quad{\ce{\Verb?bs = ?\alert<14>{\Verb?(x:xs)?}}} \\
+Assume: \alert<23>{\Verb?map id xs?}\Verb? = ?\alert<24-25>{\Verb?xs?}
+
+\onslide<27>
+Case:\quad{\ce{\Verb?bs = (x:xs)?}} \checkmark \\
+Assume: \Verb?map id xs = xs?
+
+\end{overprint}
+
+\vspace{5pt}
+
+\begin{center}
+\begin{overprint}
+
+\onslide<3-4>
+\begin{semiverbatim}
+map id \alert<4>{bs} = \alert<4>{bs}
+\end{semiverbatim}
+
+\onslide<5>
+\begin{semiverbatim}
+map id [] = []
+\end{semiverbatim}
+
+\onslide<6-8>
+\begin{semiverbatim}
+map \ca{id} \cb{[]} = []
+\end{semiverbatim}
+
+\onslide<9>
+\begin{semiverbatim}
+       \cb{[]} = []
+\end{semiverbatim}
+
+\onslide<10-11>
+\begin{semiverbatim}
+       \alert<10>{[]} = \alert<10>{[]}
+\end{semiverbatim}
+
+\onslide<13-14>
+\begin{semiverbatim}
+map id     \alert<14>{bs}      = \alert<14>{bs}
+\end{semiverbatim}
+
+\onslide<15>
+\begin{semiverbatim}
+map id (x : xs)    = (x : xs)
+\end{semiverbatim}
+
+\onslide<16-18>
+\begin{semiverbatim}
+map \ca{id} (\cb{x} : \cc{xs})    = (x : xs)
+\end{semiverbatim}
+
+\onslide<19>
+\begin{semiverbatim}
+\ca{id} \cb{x} : map \ca{id} \cc{xs}   = (x : xs)
+\end{semiverbatim}
+
+\onslide<20>
+\begin{semiverbatim}
+\alert{id x} : map id xs   = (x : xs)
+\end{semiverbatim}
+
+\onslide<21>
+\begin{semiverbatim}
+\alert{x}    : map id xs   = (x : xs)
+\end{semiverbatim}
+
+\onslide<22-24>
+\begin{semiverbatim}
+x    : \alert{map id xs}   = (x : xs)
+\end{semiverbatim}
+
+\onslide<25>
+\begin{semiverbatim}
+x    : \alert{xs}          = (x : xs)
+\end{semiverbatim}
+
+\onslide<26-27>
+\begin{semiverbatim}
+\alert<26>{(x    : xs)}        = \alert<26>{(x : xs)}
+\end{semiverbatim}
+
+\end{overprint}
+\end{center}
+
+\end{frame}
+
+\begin{frame}[t,fragile]
+    \frametitle {Functor - Composition}
+
+\begingroup
+\color{gray}\fontsize{10}{9.8}\selectfont
+
+Goal : $\forall$ \verb?bs :: [a], f :: a? $\rightarrow$ \verb?b, g :: b? $\rightarrow$ \verb?c? \\ 
+    \quad \alert<3,21>{\Verb?map g (map f bs) = map (g . f) xs?}
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1-6,10,14,18-24,28,32,36->
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map f [] = []
+map f (x:xs) = f x : map f xs
+\end{semiverbatim}
+
+\onslide<7,11,15>
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map \ca{f} \cb{[]} = []
+map f (x:xs) = f x : map f xs
+\end{semiverbatim}
+
+\onslide<8-9,12-13,16-17>
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map \ca{f} \cb{[]} = \cb{[]}
+map f (x:xs) = f x : map f xs
+\end{semiverbatim}
+
+\onslide<25,29,33>
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map f [] = []
+map \ca{f} (\cb{x}:\cc{xs}) = f x : map f xs
+\end{semiverbatim}
+
+\onslide<26-27,30-31,34-35>
+\begin{semiverbatim}
+map :: (a -> b) -> [a] -> [b]
+map f [] = []
+map \ca{f} (\cb{x}:\cc{xs}) = \ca{f} \cb{x} : map \ca{f} \cc{xs}
+\end{semiverbatim}
+
+\end{overprint}
+
+\endgroup
+
+\vspace{10pt}
+
+\begin{overprint}
+
+\onslide<1>
+Cases:\quad\Verb?bs = []? \quad and \Verb?bs = (x:xs)?
+
+\onslide<2-18>
+Case:\quad{\ce{\Verb?bs = ?\alert<4>{\Verb?[]?}}} 
+
+\onslide<19>
+Case:\quad{\ce{\Verb?bs = []?}} \checkmark 
+
+\onslide<20-42>
+Case:\quad{\ce{\Verb?bs = ?\alert<22>{\Verb?(x:xs)?}}} \\
+Assume:\quad\alert<39>{\Verb?map g (map f xs)?}\Verb? = ?\alert<40-41>{\Verb?map (g . f) xs?}
+
+\onslide<43>
+Case:\quad{\ce{\Verb?bs = (x:xs)?}} \checkmark \\
+Assume:\quad\Verb?map g (map f xs) = map (g . f) xs ?
+
+\end{overprint}
+
+\vspace{5pt}
+
+\begin{center}
+\begin{flushleft}
+\begin{overprint}
+
+\onslide<3-4>
+\begin{semiverbatim}
+map g (map f \alert<4>{bs}) = map (g . f) \alert<4>{bs} 
+\end{semiverbatim}
+
+\onslide<5>
+\begin{semiverbatim}
+map g (map f []) = map (g . f) [] 
+\end{semiverbatim}
+
+\onslide<6-8>
+\begin{semiverbatim}
+map g (map f []) = map \ca{(g . f)} \cb{[]}
+\end{semiverbatim}
+
+\onslide<9>
+\begin{semiverbatim}
+map g (map f []) =             \cb{[]}
+\end{semiverbatim}
+
+\onslide<10-12>
+\begin{semiverbatim}
+map g (map \ca{f} \cb{[]}) =             []
+\end{semiverbatim}
+
+\onslide<13>
+\begin{semiverbatim}
+map g         \cb{[]} =             []
+\end{semiverbatim}
+
+\onslide<14-16>
+\begin{semiverbatim}
+map \ca{g}         \cb{[]} =             []
+\end{semiverbatim}
+
+\onslide<17>
+\begin{semiverbatim}
+              \cb{[]} =             []
+\end{semiverbatim}
+
+\onslide<18-19>
+\begin{semiverbatim}
+              \alert<18>{[]} =             \alert<18>{[]}
+\end{semiverbatim}
+
+\onslide<21-22>
+\begin{semiverbatim}
+      map g (map f \alert<22>{bs})       = map (g . f) \alert<22>{bs}
+\end{semiverbatim}
+
+\onslide<23>
+\begin{semiverbatim}
+      map g (map f (x:xs))   = map (g . f) (x:xs)
+\end{semiverbatim}
+
+\onslide<24-26>
+\begin{semiverbatim}
+      map g (map f (x:xs))   = map \ca{(g . f)} (\cb{x}:\cc{xs})
+\end{semiverbatim}
+
+\onslide<27>
+\begin{semiverbatim}
+      map g (map f (x:xs))   = \ca{(g . f)} \cb{x} : map \ca{(g . f)} \cc{xs}
+\end{semiverbatim}
+
+\onslide<28-30>
+\begin{semiverbatim}
+      map g (map \ca{f} (\cb{x}:\cc{xs}))   = (g . f) x : map (g . f) xs
+\end{semiverbatim}
+
+\onslide<31>
+\begin{semiverbatim}
+      map g (\ca{f} \cb{x} : map \ca{f} \cc{xs}) = (g . f) x : map (g . f) xs
+\end{semiverbatim}
+
+\onslide<32-34>
+\begin{semiverbatim}
+      map \ca{g} (\cb{f x} : \cc{map f xs}) = (g . f) x : map (g . f) xs
+\end{semiverbatim}
+
+\onslide<35>
+\begin{semiverbatim}
+  \ca{g} (\cb{f x}) : map \ca{g} (\cc{map f xs}) = (g . f) x : map (g . f) xs
+\end{semiverbatim}
+
+\onslide<36>
+\begin{semiverbatim}
+  \alert{g (f x)} : map g (map f xs) = (g . f) x : map (g . f) xs
+\end{semiverbatim}
+
+\onslide<37>
+\begin{semiverbatim}
+\alert{(g . f) x} : map g (map f xs) = (g . f) x : map (g . f) xs
+\end{semiverbatim}
+
+\onslide<38-40>
+\begin{semiverbatim}
+(g . f) x : \alert{map g (map f xs)} = (g . f) x : map (g . f) xs
+\end{semiverbatim}
+
+\onslide<41>
+\begin{semiverbatim}
+(g . f) x : \alert{map (g . f) xs}   = (g . f) x : map (g . f) xs
+\end{semiverbatim}
+
+\onslide<42-43>
+\begin{semiverbatim}
+\alert<42>{(g . f) x : map (g . f) xs}   = \alert<42>{(g . f) x : map (g . f) xs}
+\end{semiverbatim}
+
+\end{overprint}
+\end{flushleft}
+\end{center}
+
+\end{frame}
+
+\section{Coq}
+
+\begin{frame}
+    \frametitle {To the Coqmobile!}
+\end{frame}
+
+\begin{frame}[t,fragile]
+    \frametitle {Coq extraction - append}
+\begin{verbatim}
+module Append where
+
+import qualified Prelude
+
+data List a =
+   Nil
+ | Cons a (List a)
+
+append :: (List a1) -> (List a1) -> List a1
+append xs ys =
+  case xs of {
+   Nil -> ys;
+   Cons h t -> Cons h (append t ys)}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[t,fragile]
+    \frametitle {Coq extraction - map}
+\begin{verbatim}
+module Map where
+
+import qualified Prelude
+
+data List a =
+   Nil
+ | Cons a (List a)
+
+map :: (a1 -> a2) -> (List a1) -> List a2
+map f l =
+  case l of {
+   Nil -> Nil;
+   Cons a t -> Cons (f a) (map f t)}
+\end{verbatim}
+\end{frame}
+
+\section*{}
+
+\begin{frame}
+    \frametitle{Conclusion}
+\begin{itemize}
+\item Equational reasoning is easy and useful
+\item Theorem provers can help if you want to be really sure
+\item Very few excuses for law-breaking typeclass instances
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Other cool stuff}
+\begin{itemize}
+\item Bottom, partial data and strictness
+\item Monad laws
+\begin{itemize}
+    \item Similar to the monoid laws
+    \item Just a monoid in the category of endofunctors after all
+\end{itemize}
+\item Fold fusion
+\begin{itemize}
+    \item when does \Verb?f . fold g a = fold h b??
+\end{itemize}
+\item Program synthesis
+\item Theorems for free
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Books}
+\begin{itemize}
+\item How To Prove It - Velleman
+\item Introduction to Functional Programming with Haskell - Bird
+\item Interactive Theorem Proving and Program Development - Bertot
+\item Software Foundations - Pierce
+\end{itemize}
+\end{frame}
+
+\end{document}
